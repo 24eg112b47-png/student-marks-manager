@@ -1,7 +1,10 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { once } = require('node:events');
 const { after, test } = require('node:test');
 const { createApp } = require('../server/src/app');
+const { verifyPassword } = require('../server/src/auth');
 const { calculateMarks } = require('../server/src/javaRunner');
 const { MemoryStore } = require('../server/src/store');
 
@@ -45,6 +48,13 @@ async function register(name, email, code = inviteCode) {
 after(async () => {
   server.close();
   await once(server, 'close');
+});
+
+test('published demo password matches the scrypt hash in the database seed', async () => {
+  const seed = fs.readFileSync(path.resolve(__dirname, '../database/seed.sql'), 'utf8');
+  const match = seed.match(/'demo\.teacher@example\.com',\s*'([^']+)'/);
+  assert.ok(match, 'seed script should define the documented demo account');
+  assert.equal(await verifyPassword('ClassDemo!2026', match[1]), true);
 });
 
 test('teacher registration validates access and isolates each class', async () => {

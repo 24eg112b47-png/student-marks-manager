@@ -1,62 +1,107 @@
 # Student Marks Manager
 
-A small full-stack student results and attendance register. The React dashboard is served by the Express API; Java calculates grades and results, and PostgreSQL stores production records.
+A small full-stack application for managing a class register, recording marks and attendance, and calculating results. Built with React, Node.js/Express, Java, PostgreSQL (Neon), and Docker.
 
-## Run locally
+## Live demonstration
+
+- **Application:** [https://student-marks-manager-48k8.onrender.com](https://student-marks-manager-48k8.onrender.com)
+- **Source code:** [https://github.com/24eg112b47-png/student-marks-manager](https://github.com/24eg112b47-png/student-marks-manager)
+- **Health check:** [https://student-marks-manager-48k8.onrender.com/api/health](https://student-marks-manager-48k8.onrender.com/api/health)
+
+### Shared professor demo account
+
+Load the demo data using the steps below, then sign in with:
+
+| Login | Value |
+|---|---|
+| Username / email | `demo.teacher@example.com` |
+| Password | `ClassDemo!2026` |
+
+This is a **public, shared, read/write demo account**. Anyone with these credentials can see, add, edit, export, or delete its sample records. Use it only to explore the demonstration; do not store real student or confidential data in this account. The database seed script restores the listed sample records if they are changed.
+
+### Load the sample account and students
+
+The sample account is intentionally created by a separate SQL seed script; it is not automatically added to your live database.
+
+1. Sign in to [Neon Console](https://console.neon.tech/) and open the database used by the Render service.
+2. Open Neon's **SQL Editor**.
+3. Copy all of [`database/seed.sql`](./database/seed.sql) from this repository into the editor and run it once.
+4. Open the live app and sign in with the demo credentials above.
+
+The script creates or resets only the `demo.teacher@example.com` account and its four `DEMO-` student rows. It does not assign, delete, or modify other teachers' student records. If the seed is rerun, it restores those four example rows and resets the demo account password to the public demo password shown above.
+
+### Sample students
+
+| Roll number | Name | Maths | Java | DBMS | Attendance | Expected result |
+|---|---|---:|---:|---:|---:|---|
+| DEMO-1001 | Taylor Green | 80 | 90 | 70 | 88% | 240 total, 80.00%, B, PASS, OK |
+| DEMO-1002 | Jordan Lee | 39 | 80 | 90 | 90% | 209 total, 69.67%, D, FAIL, OK |
+| DEMO-1003 | Morgan Chen | 90 | 90 | 90 | 74% | 270 total, 90.00%, A, PASS, WARNING |
+| DEMO-1004 | Alex Rivera | 66 | 72 | 70 | 68% | 208 total, 69.33%, D, PASS, WARNING |
+
+### Create a separate teacher account
+
+Choose **Register with invite code** on the application. Registration requires an `@anurag.edu.in` email, a password with at least 12 characters, and the private teacher invite code. The code is configured as `TEACHER_INVITE_CODE` in Render and must be obtained from the project owner; it is deliberately **not published in this repository**. The email-domain check plus invite code is a demonstration gate, not official verification that a person is faculty.
+
+Each registered teacher has an isolated class. Student records are saved in the Neon PostgreSQL database, not in GitHub. Teacher accounts see only students added to their own account. The old, unassigned sample rows (if any) are not shown in anyone's class.
+
+> Render's free web service sleeps after inactivity; the first visit may take about a minute to wake up. Neon and Render free-tier limits and retention policies can change. This is a classroom showcase, not a production service for real student information.
+
+## Features
+
+- Teacher registration (university email plus private invite code), sign-in, and sign-out.
+- Teacher-specific student records protected by server-side ownership checks.
+- Add, view calculated result, search, edit, and delete student records.
+- Filter by pass/review status, paginate the register, and export the visible results to CSV.
+- Dashboard class and subject averages, pass rate, and attendance warnings.
+- Java result calculator, Express REST API, Neon/PostgreSQL persistence, and one-container Render deployment.
+
+The term selector changes the displayed dashboard label only; records are not currently separated by semester.
+
+## Calculation rules
+
+- Total is the sum of Maths, Java, and DBMS marks; each subject is an integer from 0 to 100.
+- Percentage is `total / 3`, rounded to two decimal places.
+- Grade: A at 90+, B at 80+, C at 70+, D at 60+, otherwise F.
+- PASS requires every subject to be at least 40 and the overall percentage to be at least 40.
+- Attendance below 75% is marked WARNING; 75% and above is OK.
+
+## Local development
 
 Requirements: Node.js 22 or newer and Java 17 or newer.
 
 ```powershell
 npm install
+Copy-Item .env.example .env
+```
+
+For local account registration, set `TEACHER_INVITE_CODE` in `.env` to a private value. To use Neon locally, also set `DATABASE_URL` and a random `SESSION_SECRET` of at least 32 characters. Keep `.env` private; it is ignored by Git.
+
+```powershell
 npm run dev
 ```
 
-Open `http://localhost:5173`. Without `DATABASE_URL`, the API starts in demo-memory mode. Data in this mode is temporary and disappears when the server restarts. The local teacher invite code is `local-demo-teacher-code`; change it in `.env` before sharing a demo.
+Open `http://localhost:5173`. Without `DATABASE_URL`, the app uses temporary in-memory data which disappears when the server restarts.
 
-To use PostgreSQL locally, copy `.env.example` to `.env`, set `DATABASE_URL`, `TEACHER_INVITE_CODE`, and a private `SESSION_SECRET` of at least 32 characters, then start the app. The server creates or migrates the tables from `database/schema.sql` on startup. Existing student rows are left unassigned and are not visible to teacher accounts; each teacher sees only records created in their own account.
-
-Production build and tests:
+Run checks and build:
 
 ```powershell
-npm run build
 npm test
-npm start
+npm run build
 ```
 
-## API
+## Deployment notes
 
-- `GET /api/health` reports server and storage status.
-- `GET /api/auth/me` returns the signed-in teacher, or `null`.
-- `POST /api/auth/register`, `POST /api/auth/login`, and `POST /api/auth/logout` manage teacher sessions.
-- `GET /api/students?search=` lists records, optionally matching name or roll number.
-- `GET /api/students/:id` returns one record.
-- `POST /api/students` creates a record.
-- `PUT /api/students/:id` replaces a record's editable fields.
-- `DELETE /api/students/:id` removes a record.
-- `GET /api/stats` returns class counts and averages.
+The live service is deployed on Render because the Node server launches Java and serves the built React frontend from one Docker container. Production requires `DATABASE_URL`, `TEACHER_INVITE_CODE`, and `SESSION_SECRET`, all set as private Render environment variables. `database/schema.sql` creates/migrates the tables at startup. The service is configured for Render's Free plan in [`render.yaml`](./render.yaml).
 
-The request fields are `roll_no`, `name`, `maths`, `java`, `dbms`, and `attendance`. Marks are whole numbers from 0 through 100; attendance supports up to two decimal places. Roll numbers are normalized to uppercase and must be unique within each teacher's class.
+Never commit real database URLs, invite codes, session secrets, or private student data. Use fictional records for this public demonstration.
 
-Teacher accounts can register using an `@anurag.edu.in` email address and the private invite code. This domain-and-code check is a demo gate, not university verification; don't publish or reuse the invite code. Passwords are stored as scrypt hashes, and signed HTTP-only cookies are used for login sessions. Student APIs and dashboard statistics require a signed-in teacher and are scoped to that teacher. The selected academic term is a dashboard label only; records are not yet stored or separated by semester.
+## API overview
 
-The Java process accepts a numeric JSON object on stdin and writes calculated JSON to stdout. Percentage is `total / 3`, rounded to two decimal places. Grades are A at 90+, B at 80+, C at 70+, D at 60+, otherwise F. A student passes only when every subject is at least 40 and the overall percentage is at least 40. Attendance below 75% is flagged for review.
+- `GET /api/health` — service and storage health.
+- `GET /api/auth/me`, `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` — teacher sessions.
+- `GET /api/students?search=` and `GET /api/students/:id` — list/search or retrieve a student's record.
+- `POST /api/students`, `PUT /api/students/:id`, `DELETE /api/students/:id` — create, update, and remove records.
+- `GET /api/stats` — signed-in teacher's class statistics.
 
-## Deploy
-
-This app needs a regular Node process that can launch Java, so deploy the whole container to Render rather than Vercel's serverless functions.
-
-1. Push this project to a GitHub repository and create a free PostgreSQL project on Neon.
-2. In Neon, copy the pooled connection string and keep its password private.
-3. In Render, create a Docker web service from the repository and select the Free plan.
-4. Set `DATABASE_URL` on the Render service to the Neon connection string, set a private `TEACHER_INVITE_CODE`, and set `SESSION_SECRET` to a randomly generated value with at least 32 characters. Never commit these values. The app creates or migrates the schema on startup.
-
-Render builds the React files and Java class into the image; Express serves the UI and `/api` from the same service. The production server refuses to start without `DATABASE_URL`, so a deployment cannot silently use temporary in-memory records.
-
-## Docker
-
-```powershell
-docker build -t student-marks-manager .
-docker run --rm -p 3000:3000 -e DATABASE_URL="your-neon-connection-string" student-marks-manager
-```
-
-Open `http://localhost:3000` to use the built application.
+The Java calculation program accepts JSON on stdin and writes calculated JSON on stdout. It is launched internally by Node; the browser communicates only with the Node API.

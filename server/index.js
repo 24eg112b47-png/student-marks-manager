@@ -30,7 +30,7 @@ async function start() {
     store,
     calculate: calculateMarks,
     storageMode,
-    inviteCode: process.env.TEACHER_INVITE_CODE || 'local-demo-teacher-code',
+    inviteCode: process.env.TEACHER_INVITE_CODE,
     sessionSecret: process.env.SESSION_SECRET || 'local-development-session-secret-change-me',
   });
   const port = Number(process.env.PORT) || 3000;
