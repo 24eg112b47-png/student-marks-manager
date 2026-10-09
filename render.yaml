@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: student-marks-manager
+    runtime: docker
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
