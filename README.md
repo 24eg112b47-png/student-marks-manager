@@ -42,7 +42,7 @@ The script requires the teacher account to exist and affects only its four `DEMO
 
 ### Create a separate teacher account
 
-Choose **Register with invite code** on the application. Registration requires an `@anurag.edu.in` email, a password with at least 12 characters, and the private teacher invite code. The code is configured as `TEACHER_INVITE_CODE` in Render and must be obtained from the project owner; it is deliberately **not published in this repository**. The email-domain check plus invite code is a demonstration gate, not official verification that a person is faculty.
+Choose **Register with invite code** on the application. Registration requires an `@anurag.edu.in` email, a password with at least 12 characters, and a private teacher invite code. For this showcase, request the code directly from the project maintainer or the university contact supervising the project; it is configured privately in Render and deliberately **not published in this repository**. The application does not issue codes or verify faculty status, and this setup should not be understood as an official Anurag University account or endorsement. The email-domain check plus invite code is a demonstration access gate only.
 
 Each registered teacher has an isolated class. Student records are saved in the Neon PostgreSQL database, not in GitHub. Teacher accounts see only students added to their own account. The old, unassigned sample rows (if any) are not shown in anyone's class.
 
