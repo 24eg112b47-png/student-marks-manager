@@ -17,28 +17,24 @@ Create this regular teacher account through the app's invite-code registration b
 | Username / email | `24eg112b47@anurag.edu.in` |
 | Demo-only password | `ProfessorDemo-2026!` |
 
-The password is intentionally public and must be used only for this demo account—not for university email, GitHub, or any personal account. Anyone with these credentials can see, add, edit, export, or delete this account's sample records. Do not store real student or confidential data in it. Do not add the teacher invite code to this README or share it publicly.
+The password is intentionally public and must be used only for this demo account—not for university email, GitHub, or any personal account. Anyone with these credentials can see, add, edit, export, or delete this account's sample records. Do not store real student or confidential data in it. 
 
 ### Load the sample account and students
 
 The teacher account must be registered through the live application first. Its records are then loaded into Neon using a separate sample-data script.
 
-1. Open the [live app](https://student-marks-manager-48k8.onrender.com) and choose **Register with invite code**.
-2. Register using `24eg112b47@anurag.edu.in`, the demo-only password above, and the private `TEACHER_INVITE_CODE` configured in Render. The email must match exactly so the sample rows are attached to this account.
-3. Sign in to [Neon Console](https://console.neon.tech/) and open the database used by the Render service.
-4. Open Neon's **SQL Editor**, copy all of [`database/seed.sql`](./database/seed.sql) from this repository into it, then run it.
-5. Return to the live app and sign in with the demo credentials above.
+1. Open the [live app](https://student-marks-manager-48k8.onrender.com).
+2. Login using the demo credentials mentioned above, or make your own teacher account using the invite code by choosing **Register with invite code**.
 
-The script requires the teacher account to exist and affects only its four `DEMO-` roll numbers. It does not create an account, change the account password, or assign, delete, or modify any other teacher's student records. If rerun, it restores the four sample rows to the documented example values.
 
 ### Sample students
 
 | Roll number | Name | Maths | Java | DBMS | Attendance | Expected result |
 |---|---|---:|---:|---:|---:|---|
-| DEMO-1001 | Taylor Green | 80 | 90 | 70 | 88% | 240 total, 80.00%, B, PASS, OK |
-| DEMO-1002 | Jordan Lee | 39 | 80 | 90 | 90% | 209 total, 69.67%, D, FAIL, OK |
-| DEMO-1003 | Morgan Chen | 90 | 90 | 90 | 74% | 270 total, 90.00%, A, PASS, WARNING |
-| DEMO-1004 | Alex Rivera | 66 | 72 | 70 | 68% | 208 total, 69.33%, D, PASS, WARNING |
+| 1001 | Taylor Green | 80 | 90 | 70 | 88% | 240 total, 80.00%, B, PASS, OK |
+| 1002 | Jordan Lee | 39 | 80 | 90 | 90% | 209 total, 69.67%, D, FAIL, OK |
+| 1003 | Morgan Chen | 90 | 90 | 90 | 74% | 270 total, 90.00%, A, PASS, WARNING |
+| 1004 | Alex Rivera | 66 | 72 | 70 | 68% | 208 total, 69.33%, D, PASS, WARNING |
 
 ### Create a separate teacher account
 
