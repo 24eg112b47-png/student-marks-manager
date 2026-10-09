@@ -4,7 +4,6 @@ const path = require('node:path');
 const { once } = require('node:events');
 const { after, test } = require('node:test');
 const { createApp } = require('../server/src/app');
-const { verifyPassword } = require('../server/src/auth');
 const { calculateMarks } = require('../server/src/javaRunner');
 const { MemoryStore } = require('../server/src/store');
 
@@ -50,11 +49,14 @@ after(async () => {
   await once(server, 'close');
 });
 
-test('published demo password matches the scrypt hash in the database seed', async () => {
+test('demo student seed only targets the documented registered teacher account', () => {
   const seed = fs.readFileSync(path.resolve(__dirname, '../database/seed.sql'), 'utf8');
-  const match = seed.match(/'demo\.teacher@example\.com',\s*'([^']+)'/);
-  assert.ok(match, 'seed script should define the documented demo account');
-  assert.equal(await verifyPassword('ClassDemo!2026', match[1]), true);
+  const readme = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf8');
+  assert.match(seed, /teacher\.email = '24eg112b47@anurag\.edu\.in'/);
+  assert.match(seed, /RAISE EXCEPTION/);
+  assert.doesNotMatch(seed, /INSERT INTO teachers/);
+  assert.match(readme, /24eg112b47@anurag\.edu\.in/);
+  assert.match(readme, /ProfessorDemo-2026!/);
 });
 
 test('teacher registration validates access and isolates each class', async () => {

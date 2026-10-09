@@ -8,27 +8,28 @@ A small full-stack application for managing a class register, recording marks an
 - **Source code:** [https://github.com/24eg112b47-png/student-marks-manager](https://github.com/24eg112b47-png/student-marks-manager)
 - **Health check:** [https://student-marks-manager-48k8.onrender.com/api/health](https://student-marks-manager-48k8.onrender.com/api/health)
 
-### Shared professor demo account
+### Professor demo account
 
-Load the demo data using the steps below, then sign in with:
+Create this regular teacher account through the app's invite-code registration before using it. The username is the project owner's university address:
 
 | Login | Value |
 |---|---|
-| Username / email | `demo.teacher@example.com` |
-| Password | `ClassDemo!2026` |
+| Username / email | `24eg112b47@anurag.edu.in` |
+| Demo-only password | `ProfessorDemo-2026!` |
 
-This is a **public, shared, read/write demo account**. Anyone with these credentials can see, add, edit, export, or delete its sample records. Use it only to explore the demonstration; do not store real student or confidential data in this account. The database seed script restores the listed sample records if they are changed.
+The password is intentionally public and must be used only for this demo account—not for university email, GitHub, or any personal account. Anyone with these credentials can see, add, edit, export, or delete this account's sample records. Do not store real student or confidential data in it. Do not add the teacher invite code to this README or share it publicly.
 
 ### Load the sample account and students
 
-The sample account is intentionally created by a separate SQL seed script; it is not automatically added to your live database.
+The teacher account must be registered through the live application first. Its records are then loaded into Neon using a separate sample-data script.
 
-1. Sign in to [Neon Console](https://console.neon.tech/) and open the database used by the Render service.
-2. Open Neon's **SQL Editor**.
-3. Copy all of [`database/seed.sql`](./database/seed.sql) from this repository into the editor and run it once.
-4. Open the live app and sign in with the demo credentials above.
+1. Open the [live app](https://student-marks-manager-48k8.onrender.com) and choose **Register with invite code**.
+2. Register using `24eg112b47@anurag.edu.in`, the demo-only password above, and the private `TEACHER_INVITE_CODE` configured in Render. The email must match exactly so the sample rows are attached to this account.
+3. Sign in to [Neon Console](https://console.neon.tech/) and open the database used by the Render service.
+4. Open Neon's **SQL Editor**, copy all of [`database/seed.sql`](./database/seed.sql) from this repository into it, then run it.
+5. Return to the live app and sign in with the demo credentials above.
 
-The script creates or resets only the `demo.teacher@example.com` account and its four `DEMO-` student rows. It does not assign, delete, or modify other teachers' student records. If the seed is rerun, it restores those four example rows and resets the demo account password to the public demo password shown above.
+The script requires the teacher account to exist and affects only its four `DEMO-` roll numbers. It does not create an account, change the account password, or assign, delete, or modify any other teacher's student records. If rerun, it restores the four sample rows to the documented example values.
 
 ### Sample students
 
