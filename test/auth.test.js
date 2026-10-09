@@ -1,6 +1,4 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const { once } = require('node:events');
 const { after, test } = require('node:test');
 const { createApp } = require('../server/src/app');
@@ -47,16 +45,6 @@ async function register(name, email, code = inviteCode) {
 after(async () => {
   server.close();
   await once(server, 'close');
-});
-
-test('demo student seed only targets the documented registered teacher account', () => {
-  const seed = fs.readFileSync(path.resolve(__dirname, '../database/seed.sql'), 'utf8');
-  const readme = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf8');
-  assert.match(seed, /teacher\.email = '24eg112b47@anurag\.edu\.in'/);
-  assert.match(seed, /RAISE EXCEPTION/);
-  assert.doesNotMatch(seed, /INSERT INTO teachers/);
-  assert.match(readme, /24eg112b47@anurag\.edu\.in/);
-  assert.match(readme, /ProfessorDemo-2026!/);
 });
 
 test('teacher registration validates access and isolates each class', async () => {

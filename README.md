@@ -21,20 +21,10 @@ The password is intentionally public and must be used only for this demo account
 
 ### Load the sample account and students
 
-The teacher account must be registered through the live application first. Its records are then loaded into Neon using a separate sample-data script.
+The teacher account and student records have been added manually to the live Neon database. No SQL seed script is needed. Sign in to the live app with the demo account above to view the current records.
 
 1. Open the [live app](https://student-marks-manager-48k8.onrender.com).
-2. Login using the demo credentials mentioned above, or make your own teacher account using the invite code by choosing **Register with invite code**.
-
-
-### Sample students
-
-| Roll number | Name | Maths | Java | DBMS | Attendance | Expected result |
-|---|---|---:|---:|---:|---:|---|
-| 1001 | Taylor Green | 80 | 90 | 70 | 88% | 240 total, 80.00%, B, PASS, OK |
-| 1002 | Jordan Lee | 39 | 80 | 90 | 90% | 209 total, 69.67%, D, FAIL, OK |
-| 1003 | Morgan Chen | 90 | 90 | 90 | 74% | 270 total, 90.00%, A, PASS, WARNING |
-| 1004 | Alex Rivera | 66 | 72 | 70 | 68% | 208 total, 69.33%, D, PASS, WARNING |
+2. Log in using the demo credentials above, or create your own teacher account using the invite code by choosing **Register with invite code**.
 
 ### Create a separate teacher account
 
