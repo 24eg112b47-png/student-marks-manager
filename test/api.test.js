@@ -6,9 +6,26 @@ const { calculateMarks } = require('../server/src/javaRunner');
 const { MemoryStore } = require('../server/src/store');
 
 const store = new MemoryStore();
-const server = createApp({ store, calculate: calculateMarks, storageMode: 'test-memory' }).listen(0);
+const server = createApp({
+  store,
+  calculate: calculateMarks,
+  storageMode: 'test-memory',
+  inviteCode: 'test-teacher-invite-code',
+  sessionSecret: 'test-session-secret-with-at-least-32-characters',
+}).listen(0);
 const serverReady = once(server, 'listening');
 const baseUrl = `http://127.0.0.1:${server.address().port}`;
+let sessionCookie;
+
+async function api(path, options = {}) {
+  return fetch(`${baseUrl}${path}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+    },
+  });
+}
 
 after(async () => {
   server.close();
@@ -17,8 +34,20 @@ after(async () => {
 
 test('student REST workflow validates, searches, updates, reports stats and deletes', async () => {
   await serverReady;
+  const registerResponse = await api('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Amina Teacher',
+      email: 'amina@anurag.edu.in',
+      password: 'correct horse battery staple',
+      invite_code: 'test-teacher-invite-code',
+    }),
+  });
+  assert.equal(registerResponse.status, 201);
+  sessionCookie = registerResponse.headers.get('set-cookie').split(';')[0];
 
-  const invalidResponse = await fetch(`${baseUrl}/api/students`, {
+  const invalidResponse = await api('/api/students', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'Missing roll' }),
@@ -33,7 +62,7 @@ test('student REST workflow validates, searches, updates, reports stats and dele
     dbms: 94,
     attendance: 97,
   };
-  const createdResponse = await fetch(`${baseUrl}/api/students`, {
+  const createdResponse = await api('/api/students', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -44,30 +73,30 @@ test('student REST workflow validates, searches, updates, reports stats and dele
   assert.equal(created.total, 281);
   assert.equal(created.result, 'PASS');
 
-  const duplicateResponse = await fetch(`${baseUrl}/api/students`, {
+  const duplicateResponse = await api('/api/students', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   assert.equal(duplicateResponse.status, 409);
 
-  const searchResponse = await fetch(`${baseUrl}/api/students?search=amina`);
+  const searchResponse = await api('/api/students?search=amina');
   assert.equal((await searchResponse.json()).length, 1);
-  const statsResponse = await fetch(`${baseUrl}/api/stats`);
+  const statsResponse = await api('/api/stats');
   const stats = await statsResponse.json();
   assert.equal(stats.student_count, 1);
   assert.equal(stats.pass_count, 1);
   assert.equal(Number(stats.subject_averages.maths), 96);
 
-  const updatedResponse = await fetch(`${baseUrl}/api/students/${created.id}`, {
+  const updatedResponse = await api(`/api/students/${created.id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...payload, maths: 39 }),
   });
   assert.equal((await updatedResponse.json()).result, 'FAIL');
 
-  const deletedResponse = await fetch(`${baseUrl}/api/students/${created.id}`, { method: 'DELETE' });
+  const deletedResponse = await api(`/api/students/${created.id}`, { method: 'DELETE' });
   assert.equal(deletedResponse.status, 204);
-  const missingResponse = await fetch(`${baseUrl}/api/students/${created.id}`);
+  const missingResponse = await api(`/api/students/${created.id}`);
   assert.equal(missingResponse.status, 404);
 });

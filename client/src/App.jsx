@@ -10,8 +10,10 @@ import {
   ChevronRight,
   CircleHelp,
   Clock3,
+  Eye,
   GraduationCap,
   LayoutDashboard,
+  LogOut,
   Plus,
   Pencil,
   Search,
@@ -30,6 +32,9 @@ const blankForm = {
   dbms: '',
   attendance: '',
 };
+
+const terms = ['Autumn term · Semester 1', 'Spring term · Semester 2', 'Summer term'];
+const pageSize = 8;
 
 function formatNumber(value, digits = 1) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -168,14 +173,110 @@ function StudentDialog({ student, onClose, onSaved }) {
   );
 }
 
+function AuthScreen({ onAuthenticated }) {
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ name: '', email: '', password: '', invite_code: '' });
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const registering = mode === 'register';
+
+  async function submit(event) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const result = await request(`/api/auth/${mode}`, {
+        method: 'POST',
+        body: JSON.stringify(form),
+      });
+      onAuthenticated(result.teacher);
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function changeMode(nextMode) {
+    setMode(nextMode);
+    setForm({ name: '', email: '', password: '', invite_code: '' });
+    setError('');
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-card">
+        <span className="brand-mark auth-brand"><BookOpenCheck size={21} /></span>
+        <p className="eyebrow">ANURAG UNIVERSITY · TEACHER WORKSPACE</p>
+        <h1>{registering ? 'Create your teacher account.' : 'Welcome back.'}</h1>
+        <p className="auth-description">Sign in to manage your own student class records.</p>
+        <form onSubmit={submit} className="auth-form">
+          {registering && <label className="field"><span>Full name</span><input required maxLength="100" autoComplete="name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>}
+          <label className="field"><span>University email</span><input required type="email" autoComplete="username" pattern=".+@anurag\.edu\.in" title="Use your @anurag.edu.in address" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="name@anurag.edu.in" /></label>
+          <label className="field"><span>Password {registering && <small>(12 characters minimum)</small>}</span><input required type="password" minLength="12" maxLength="128" autoComplete={registering ? 'new-password' : 'current-password'} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
+          {registering && <label className="field"><span>Teacher invite code</span><input required autoComplete="off" value={form.invite_code} onChange={(event) => setForm({ ...form, invite_code: event.target.value })} /></label>}
+          {error && <p className="form-error" role="alert"><AlertTriangle size={15} />{error}</p>}
+          <button className="button button-primary auth-submit" type="submit" disabled={saving}>{saving ? 'Please wait…' : registering ? 'Create teacher account' : 'Sign in'}</button>
+        </form>
+        <p className="auth-switch">{registering ? 'Already have an account?' : 'New teacher?'} <button type="button" onClick={() => changeMode(registering ? 'login' : 'register')}>{registering ? 'Sign in' : 'Register with invite code'}</button></p>
+        <p className="auth-note">Registration requires an @anurag.edu.in email address and a teacher invite code.</p>
+      </section>
+    </main>
+  );
+}
+
+function StudentResultDialog({ student, onClose }) {
+  return (
+    <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="dialog result-dialog" role="dialog" aria-modal="true" aria-labelledby="result-title">
+        <header className="dialog-head"><div><p className="eyebrow">CALCULATED RESULT · {student.roll_no}</p><h2 id="result-title">{student.name}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close result"><X size={18} /></button></header>
+        <div className="result-grid">
+          <div><span>Total</span><strong>{student.total} / 300</strong></div>
+          <div><span>Percentage</span><strong>{formatNumber(student.percentage, 2)}%</strong></div>
+          <div><span>Grade</span><strong>{student.grade}</strong></div>
+          <div><span>Result</span><strong>{resultLabel(student.result)}</strong></div>
+          <div><span>Attendance</span><strong>{formatNumber(student.attendance, 2)}% · {student.attendance_status}</strong></div>
+        </div>
+        <footer className="dialog-actions"><button className="button button-primary" onClick={onClose}>Done</button></footer>
+      </section>
+    </div>
+  );
+}
+
+function HelpDialog({ onClose }) {
+  return (
+    <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="dialog help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <header className="dialog-head"><div><p className="eyebrow">QUICK GUIDE</p><h2 id="help-title">Using the class register</h2></div><button className="icon-button" onClick={onClose} aria-label="Close help"><X size={18} /></button></header>
+        <ul className="help-list">
+          <li><strong>Add a student</strong><span>Enter a unique roll number, marks from 0–100, and attendance. Results are calculated automatically.</span></li>
+          <li><strong>Find and review records</strong><span>Search by name or roll number, filter by result, and use the eye icon to view a full result.</span></li>
+          <li><strong>Manage your class</strong><span>Edit or remove records with the row actions. CSV export downloads all records matching your search and result filter.</span></li>
+          <li><strong>Teacher accounts</strong><span>Each signed-in teacher can access only the records created in their account. The selected term changes the dashboard label; records are not yet grouped by semester.</span></li>
+        </ul>
+        <footer className="dialog-actions"><button className="button button-primary" onClick={onClose}>Got it</button></footer>
+      </section>
+    </div>
+  );
+}
+
 export default function App() {
+  const [teacher, setTeacher] = useState(null);
+  const [authChecking, setAuthChecking] = useState(true);
   const [students, setStudents] = useState([]);
   const [stats, setStats] = useState({ student_count: 0, average_percentage: 0, average_attendance: 0 });
   const [storage, setStorage] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const [dialogStudent, setDialogStudent] = useState(undefined);
+  const [resultStudent, setResultStudent] = useState(null);
   const [deleteStudent, setDeleteStudent] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [term, setTerm] = useState(() => {
+    const savedTerm = window.localStorage.getItem('student-marks-term');
+    return terms.includes(savedTerm) ? savedTerm : terms[0];
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -183,7 +284,15 @@ export default function App() {
   const dateLabel = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: '2-digit' }).format(today);
   const dateEyebrow = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(today).toUpperCase();
 
+  useEffect(() => {
+    request('/api/auth/me')
+      .then((result) => setTeacher(result.teacher))
+      .catch((authError) => setError(authError.message))
+      .finally(() => setAuthChecking(false));
+  }, []);
+
   async function loadData(query = search) {
+    if (!teacher) return;
     try {
       const [records, summary, health] = await Promise.all([
         request(`/api/students?search=${encodeURIComponent(query)}`),
@@ -195,22 +304,28 @@ export default function App() {
       setStorage(health.storage);
       setError('');
     } catch (loadError) {
-      setError(loadError.message);
+      if (loadError.message.includes('sign in')) {
+        setTeacher(null);
+      } else {
+        setError(loadError.message);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    if (!teacher) return undefined;
     const timer = window.setTimeout(() => { loadData(search); }, 180);
     return () => window.clearTimeout(timer);
-  }, [search]);
+  }, [search, teacher]);
 
   useEffect(() => {
+    if (!teacher) return undefined;
     const onFocus = () => loadData(search);
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [search]);
+  }, [search, teacher]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -219,13 +334,19 @@ export default function App() {
   }, [notice]);
 
   const visibleStudents = students.filter((student) => filter === 'ALL' || student.result === filter);
+  const pageCount = Math.max(1, Math.ceil(visibleStudents.length / pageSize));
+  const pageStudents = visibleStudents.slice((page - 1) * pageSize, page * pageSize);
   const passedCount = Number(stats.pass_count || 0);
-  const attendanceWarnings = students.filter((student) => student.attendance_status === 'WARNING').length;
+  const attendanceWarnings = Number(stats.warning_count || 0);
   const passRate = stats.student_count ? Math.round((passedCount / stats.student_count) * 100) : 0;
   const sortedSubjects = subjectKeys.map((subject) => ({
     subject: subject.toUpperCase(),
     average: Number(stats.subject_averages?.[subject] || 0),
   }));
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   function saveStudent(saved, editing) {
     setStudents((current) => editing
@@ -234,6 +355,23 @@ export default function App() {
     setDialogStudent(undefined);
     setNotice(editing ? 'Student record updated.' : 'Student added to the register.');
     loadData(search);
+  }
+
+  async function logout() {
+    try {
+      await request('/api/auth/logout', { method: 'POST' });
+      setTeacher(null);
+      setStudents([]);
+      setStats({ student_count: 0, average_percentage: 0, average_attendance: 0 });
+      setPage(1);
+    } catch (logoutError) {
+      setError(logoutError.message);
+    }
+  }
+
+  function selectTerm(value) {
+    setTerm(value);
+    window.localStorage.setItem('student-marks-term', value);
   }
 
   async function removeStudent() {
@@ -264,6 +402,11 @@ export default function App() {
     setNotice(`${visibleStudents.length} records exported.`);
   }
 
+  if (authChecking) {
+    return <main className="auth-page"><p className="auth-loading">Checking your teacher session…</p></main>;
+  }
+  if (!teacher) return <AuthScreen onAuthenticated={setTeacher} />;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -277,15 +420,17 @@ export default function App() {
           <a className="nav-link" href="#student-records"><UsersRound size={17} />Students<span className="nav-count">{stats.student_count}</span></a>
         </nav>
         <div className="sidebar-bottom">
-          <div className="term-card">
+          <label className="term-card">
             <span className="term-mark"><Sparkles size={16} /></span>
-            <span><strong>Autumn term</strong><small>2026 · Semester 1</small></span>
+            <select value={term} onChange={(event) => selectTerm(event.target.value)} aria-label="Select displayed academic term">
+              {terms.map((item) => <option key={item}>{item}</option>)}
+            </select>
             <ChevronDown size={15} />
-          </div>
+          </label>
           <div className="profile-row">
-            <span className="profile-avatar">AM</span>
-            <span className="profile-copy"><strong>Academic office</strong><small>Faculty workspace</small></span>
-            <CircleHelp size={16} className="profile-help" />
+            <span className="profile-avatar">{teacher.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
+            <span className="profile-copy"><strong>{teacher.name}</strong><small>{teacher.email}</small></span>
+            <button className="icon-button profile-action" onClick={logout} aria-label="Sign out" title="Sign out"><LogOut size={16} /></button>
           </div>
         </div>
       </aside>
@@ -295,6 +440,7 @@ export default function App() {
           <div className="breadcrumbs"><span>Workspace</span><ChevronRight size={14} /><strong>Overview</strong></div>
           <div className="topbar-right">
             <span className={`storage-tag ${storage === 'neon-postgres' ? 'storage-live' : ''}`}><span className="status-dot" />{storage === 'neon-postgres' ? 'NEON CONNECTED' : storage === 'demo-memory' ? 'DEMO MODE' : 'CONNECTING'}</span>
+            <button className="icon-button topbar-help" onClick={() => setShowHelp(true)} aria-label="Open help" title="Help"><CircleHelp size={16} /></button>
             <span className="topbar-date"><Clock3 size={14} />{dateLabel}</span>
           </div>
         </header>
@@ -302,7 +448,7 @@ export default function App() {
         <div className="page-content">
           <section className="welcome-row">
             <div>
-              <p className="eyebrow">{dateEyebrow} <span className="eyebrow-dot">/</span> SEMESTER 1</p>
+              <p className="eyebrow">{dateEyebrow} <span className="eyebrow-dot">/</span> {term.toUpperCase()}</p>
               <h1>Student overview<span className="title-period">.</span></h1>
               <p className="welcome-subtitle">A clear view of class progress, one record at a time.</p>
             </div>
@@ -325,16 +471,16 @@ export default function App() {
                 <button className="button button-outline export-button" onClick={exportCsv} disabled={!visibleStudents.length}><ArrowDownToLine size={16} />Export CSV</button>
               </div>
               <div className="table-toolbar">
-                <label className="search-box"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or roll no." aria-label="Search students" />{search && <button onClick={() => setSearch('')} aria-label="Clear search"><X size={14} /></button>}</label>
+                <label className="search-box"><Search size={16} /><input value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="Search name or roll no." aria-label="Search students" />{search && <button onClick={() => { setPage(1); setSearch(''); }} aria-label="Clear search"><X size={14} /></button>}</label>
                 <div className="filter-group" role="group" aria-label="Filter by result">
-                  {[['ALL', 'All'], ['PASS', 'Passed'], ['FAIL', 'Review']].map(([key, label]) => <button key={key} className={filter === key ? 'filter-chip filter-selected' : 'filter-chip'} onClick={() => setFilter(key)}>{label}</button>)}
+                  {[['ALL', 'All'], ['PASS', 'Passed'], ['FAIL', 'Review']].map(([key, label]) => <button key={key} className={filter === key ? 'filter-chip filter-selected' : 'filter-chip'} onClick={() => { setPage(1); setFilter(key); }}>{label}</button>)}
                 </div>
               </div>
               <div className="table-scroll">
                 <table className="student-table">
                   <thead><tr><th>STUDENT</th><th>MATHS</th><th>JAVA</th><th>DBMS</th><th>ATTEND.</th><th>OVERALL</th><th>RESULT</th><th aria-label="Actions" /></tr></thead>
                   <tbody>
-                    {loading ? <tr><td colSpan="8" className="empty-state">Loading student records…</td></tr> : visibleStudents.length ? visibleStudents.map((student) => (
+                    {loading ? <tr><td colSpan="8" className="empty-state">Loading student records…</td></tr> : visibleStudents.length ? pageStudents.map((student) => (
                       <tr key={student.id}>
                         <td><div className="student-identity"><span className={`student-avatar avatar-${student.id % 5}`}>{student.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span><span><strong>{student.name}</strong><small>{student.roll_no}</small></span></div></td>
                         <td><ScoreMeter value={student.maths} /></td>
@@ -343,13 +489,13 @@ export default function App() {
                         <td><span className={student.attendance_status === 'WARNING' ? 'attendance-value attendance-low' : 'attendance-value'}>{formatNumber(student.attendance, 0)}%{student.attendance_status === 'WARNING' && <AlertTriangle size={12} />}</span></td>
                         <td><span className="overall-value">{formatNumber(student.percentage)}%</span><span className={`grade-badge grade-${student.grade.toLowerCase()}`}>{student.grade}</span></td>
                         <td><span className={student.result === 'PASS' ? 'result-pill result-pass' : 'result-pill result-review'}><span />{resultLabel(student.result)}</span></td>
-                        <td><div className="row-actions"><button className="icon-button row-edit" onClick={() => setDialogStudent(student)} aria-label={`Edit ${student.name}`} title="Edit student"><Pencil size={15} /></button><button className="icon-button row-delete" onClick={() => setDeleteStudent(student)} aria-label={`Delete ${student.name}`} title="Delete student"><Trash2 size={15} /></button></div></td>
+                        <td><div className="row-actions"><button className="icon-button row-result" onClick={() => setResultStudent(student)} aria-label={`View result for ${student.name}`} title="View result"><Eye size={15} /></button><button className="icon-button row-edit" onClick={() => setDialogStudent(student)} aria-label={`Edit ${student.name}`} title="Edit student"><Pencil size={15} /></button><button className="icon-button row-delete" onClick={() => setDeleteStudent(student)} aria-label={`Delete ${student.name}`} title="Delete student"><Trash2 size={15} /></button></div></td>
                       </tr>
                     )) : <tr><td colSpan="8" className="empty-state">{search ? 'No students match this search.' : 'No students in this view yet.'}</td></tr>}
                   </tbody>
                 </table>
               </div>
-              <footer className="table-footer"><span>Showing <strong>{visibleStudents.length}</strong> of <strong>{students.length}</strong> records</span><div className="pagination"><button className="icon-button" aria-label="Previous page" disabled><ChevronLeft size={16} /></button><span>1</span><button className="icon-button" aria-label="Next page" disabled><ChevronRight size={16} /></button></div></footer>
+              <footer className="table-footer"><span>Showing <strong>{visibleStudents.length ? (page - 1) * pageSize + 1 : 0}–{Math.min(page * pageSize, visibleStudents.length)}</strong> of <strong>{visibleStudents.length}</strong> matching records</span><div className="pagination"><button className="icon-button" aria-label="Previous page" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}><ChevronLeft size={16} /></button><span>Page {page} of {pageCount}</span><button className="icon-button" aria-label="Next page" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page >= pageCount}><ChevronRight size={16} /></button></div></footer>
             </section>
 
             <aside className="insights-panel">
@@ -370,6 +516,8 @@ export default function App() {
       </main>
 
       {dialogStudent !== undefined && <StudentDialog student={dialogStudent} onClose={() => setDialogStudent(undefined)} onSaved={saveStudent} />}
+      {resultStudent && <StudentResultDialog student={resultStudent} onClose={() => setResultStudent(null)} />}
+      {showHelp && <HelpDialog onClose={() => setShowHelp(false)} />}
       {deleteStudent && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteStudent(null); }}><section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-title"><span className="confirm-icon"><Trash2 size={19} /></span><h2 id="delete-title">Remove this record?</h2><p><strong>{deleteStudent.name}</strong> ({deleteStudent.roll_no}) will be removed from the class register.</p><div className="dialog-actions"><button className="button button-quiet" onClick={() => setDeleteStudent(null)}>Keep record</button><button className="button button-danger" onClick={removeStudent}><Trash2 size={15} />Remove student</button></div></section></div>}
       {notice && <div className="toast" role="status"><span className="toast-check"><Check size={14} /></span>{notice}<button onClick={() => setNotice('')} aria-label="Dismiss notification"><X size={15} /></button></div>}
     </div>
